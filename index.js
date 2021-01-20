@@ -11,15 +11,10 @@
 
 const http = require('http')
 const fastDecode = require('fast-decode-uri-component')
-const isRegexSafe = require('safe-regex2')
 const Node = require('./node')
 const NODE_TYPES = Node.prototype.types
 const httpMethods = http.METHODS
 const FULL_PATH_REGEXP = /^https?:\/\/.*?\//
-
-if (!isRegexSafe(FULL_PATH_REGEXP)) {
-  throw new Error('the FULL_PATH_REGEXP is not safe, update this module')
-}
 
 function Router (opts) {
   opts = opts || {}
@@ -89,31 +84,21 @@ Router.prototype._on = function _on (method, path, opts, handler, store) {
       this._insert(method, staticPart, NODE_TYPES.STATIC, null, null, null, null)
 
       // isolate the parameter name
-      var isRegex = false
       while (i < len && path.charCodeAt(i) !== 47) {
-        isRegex = isRegex || path[i] === '('
-        if (isRegex) {
-          i = getClosingParenthensePosition(path, i) + 1
-          break
-        } else if (path.charCodeAt(i) !== 45) {
+        if (path.charCodeAt(i) !== 45) {
           i++
         } else {
           break
         }
       }
 
-      if (isRegex && (i === len || path.charCodeAt(i) === 47)) {
-        nodeType = NODE_TYPES.REGEX
-      } else if (i < len && path.charCodeAt(i) !== 47) {
+      if (i < len && path.charCodeAt(i) !== 47) {
         nodeType = NODE_TYPES.MULTI_PARAM
       }
 
       var parameter = path.slice(j, i)
-      var regex = isRegex ? parameter.slice(parameter.indexOf('('), i) : null
-      if (isRegex) {
-        regex = new RegExp(regex)
-      }
-      params.push(parameter.slice(0, isRegex ? parameter.indexOf('(') : i))
+    
+      params.push(parameter.slice(0, i))
 
       path = path.slice(0, j) + path.slice(i)
       i = j
@@ -125,14 +110,14 @@ Router.prototype._on = function _on (method, path, opts, handler, store) {
         if (this.caseSensitive === false) {
           completedPath = completedPath.toLowerCase()
         }
-        return this._insert(method, completedPath, nodeType, params, handler, store, regex)
+        return this._insert(method, completedPath, nodeType, params, handler, store)
       }
       // add the parameter and continue with the search
       staticPart = path.slice(0, i)
       if (this.caseSensitive === false) {
         staticPart = staticPart.toLowerCase()
       }
-      this._insert(method, staticPart, nodeType, params, null, null, regex)
+      this._insert(method, staticPart, nodeType, params, null, null)
 
       i--
     // wildcard route
@@ -152,7 +137,7 @@ Router.prototype._on = function _on (method, path, opts, handler, store) {
   this._insert(method, path, NODE_TYPES.STATIC, params, handler, store, null)
 }
 
-Router.prototype._insert = function _insert (method, path, kind, params, handler, store, regex) {
+Router.prototype._insert = function _insert (method, path, kind, params, handler, store) {
   const route = path
   var prefix = ''
   var pathLen = 0
@@ -186,8 +171,7 @@ Router.prototype._insert = function _insert (method, path, kind, params, handler
           prefix: prefix.slice(len),
           children: currentNode.children,
           kind: currentNode.kind,
-          handler: currentNode.handler,
-          regex: currentNode.regex
+          handler: currentNode.handler
         }
       )
       if (currentNode.wildcardChild !== null) {
@@ -209,8 +193,7 @@ Router.prototype._insert = function _insert (method, path, kind, params, handler
           method: method,
           prefix: path.slice(len),
           kind: kind,
-          handlers: null,
-          regex: regex
+          handlers: null
         })
        
         node.setHandler(handler, params, store)
@@ -230,7 +213,7 @@ Router.prototype._insert = function _insert (method, path, kind, params, handler
         continue
       }
       // there are not children within the given label, let's create a new one!
-      node = new Node({ method: method, prefix: path, kind: kind, regex: regex })
+      node = new Node({ method: method, prefix: path, kind: kind })
       node.setHandler(handler, params, store)
       currentNode.addChild(node)
 
@@ -432,25 +415,6 @@ Router.prototype.find = function find (method, path) {
       continue
     }
 
-    // parametric(regex) route
-    if (kind === NODE_TYPES.REGEX) {
-      currentNode = node
-      i = path.indexOf('/')
-      if (i === -1) i = pathLen
-      if (i > maxParamLength) return null
-      decoded = fastDecode(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
-      if (decoded === null) {
-        return this.onBadUrl !== null
-          ? this._onBadUrl(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
-          : null
-      }
-      if (!node.regex.test(decoded)) return null
-      params[pindex++] = decoded
-      path = path.slice(i)
-      idxInOriginalPath += i
-      continue
-    }
-
     // multiparametric route
     if (kind === NODE_TYPES.MULTI_PARAM) {
       currentNode = node
@@ -548,32 +512,4 @@ function sanitizeUrl (url) {
     }
   }
   return url
-}
-
-function getClosingParenthensePosition (path, idx) {
-  // `path.indexOf()` will always return the first position of the closing parenthese,
-  // but it's inefficient for grouped or wrong regexp expressions.
-  // see issues #62 and #63 for more info
-
-  var parentheses = 1
-
-  while (idx < path.length) {
-    idx++
-
-    // ignore skipped chars
-    if (path[idx] === '\\') {
-      idx++
-      continue
-    }
-
-    if (path[idx] === ')') {
-      parentheses--
-    } else if (path[idx] === '(') {
-      parentheses++
-    }
-
-    if (!parentheses) return idx
-  }
-
-  throw new TypeError('Invalid regexp expression in "' + path + '"')
 }

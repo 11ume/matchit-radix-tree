@@ -2,8 +2,8 @@ const http = require('http')
 const router = require('./index')
 
 const r = new router()
-r.on('GET', '/users/:id', (req, res, params) => {
-  res.end('{"message":"hello world"}' + params.id)
+r.on('GET', '/users/:foo/:id', (req, res, params) => {
+  res.end('{"message":"hello world"}' + params.foo + params.id)
 })
 
 const server = http.createServer((req, res) => {

@@ -18,7 +18,6 @@ function Node (options) {
   this.numberOfChildren = Object.keys(this.children).length
   this.kind = options.kind || this.types.STATIC
   this.handler = options.handler
-  this.regex = options.regex || null
   this.wildcardChild = null
   this.parametricBrother = null
   this.versions = options.versions
@@ -100,7 +99,6 @@ Node.prototype.reset = function (prefix, versions) {
   this.kind = this.types.STATIC
   this.handler = null
   this.numberOfChildren = 0
-  this.regex = null
   this.wildcardChild = null
   this.versions = versions
   return this
