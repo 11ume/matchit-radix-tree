@@ -18,7 +18,6 @@ const FULL_PATH_REGEXP = /^https?:\/\/.*?\//
 
 function Router () {
   this.onBadUrl = null
-  this.defaultRoute = null
   this.caseSensitive = true
   this.ignoreTrailingSlash = false
   this.maxParamLength = 100
@@ -263,7 +262,6 @@ Router.prototype.off = function off (method, path) {
 
 Router.prototype.lookup = function lookup (req, res) {
   var handle = this.find(req.method, sanitizeUrl(req.url))
-  if (handle === null) return this._defaultRoute(req, res)
   return handle.handler(req, res, handle.params)
 }
 
@@ -449,23 +447,6 @@ Router.prototype._getWildcardNode = function (node, path, len) {
     }
   }
   return null
-}
-
-Router.prototype._defaultRoute = function (req, res) {
-  if (this.defaultRoute !== null) {
-    return this.defaultRoute(req, res)
-  } else {
-    res.statusCode = 404
-    res.end()
-  }
-}
-
-Router.prototype._onBadUrl = function (path) {
-  const onBadUrl = this.onBadUrl
-  return {
-    handler: (req, res) => onBadUrl(path, req, res),
-    params: {}
-  }
 }
 
 for (var i in http.METHODS) {
