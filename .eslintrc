@@ -1,5 +1,6 @@
 {
     "root": true,
+    "parser": "babel-eslint",
     "extends": [
         "standard"
     ],
@@ -17,10 +18,10 @@
         "no-shadow": "error",
         "prefer-const": "error",
         "no-param-reassign": "error",
-        "space-before-function-paren": 0,
         "array-bracket-spacing": "error",
         "object-property-newline": "error",
         "object-curly-spacing": 1,
+        "space-before-function-paren": 0,
         "no-unused-vars": 0,
         "object-curly-newline": [
             "error",
