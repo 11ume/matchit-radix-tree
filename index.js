@@ -261,12 +261,10 @@ Router.prototype.off = function off (method, path) {
   })
 }
 
-Router.prototype.lookup = function lookup (req, res, ctx) {
+Router.prototype.lookup = function lookup (req, res) {
   var handle = this.find(req.method, sanitizeUrl(req.url))
-  if (handle === null) return this._defaultRoute(req, res, ctx)
-  return ctx === undefined
-    ? handle.handler(req, res, handle.params)
-    : handle.handler.call(ctx, req, res, handle.params)
+  if (handle === null) return this._defaultRoute(req, res)
+  return handle.handler(req, res, handle.params)
 }
 
 Router.prototype.find = function find (method, path) {
@@ -453,11 +451,9 @@ Router.prototype._getWildcardNode = function (node, path, len) {
   return null
 }
 
-Router.prototype._defaultRoute = function (req, res, ctx) {
+Router.prototype._defaultRoute = function (req, res) {
   if (this.defaultRoute !== null) {
-    return ctx === undefined
-      ? this.defaultRoute(req, res)
-      : this.defaultRoute.call(ctx, req, res)
+    return this.defaultRoute(req, res)
   } else {
     res.statusCode = 404
     res.end()
@@ -467,7 +463,7 @@ Router.prototype._defaultRoute = function (req, res, ctx) {
 Router.prototype._onBadUrl = function (path) {
   const onBadUrl = this.onBadUrl
   return {
-    handler: (req, res, ctx) => onBadUrl(path, req, res),
+    handler: (req, res) => onBadUrl(path, req, res),
     params: {}
   }
 }
