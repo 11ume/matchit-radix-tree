@@ -20,7 +20,6 @@ function Node (options) {
   this.handler = options.handler
   this.wildcardChild = null
   this.parametricBrother = null
-  this.versions = options.versions
 }
 
 Object.defineProperty(Node.prototype, 'types', {
@@ -93,14 +92,13 @@ Node.prototype.addChild = function (node) {
   return this
 }
 
-Node.prototype.reset = function (prefix, versions) {
+Node.prototype.reset = function (prefix) {
   this.prefix = prefix
   this.children = {}
   this.kind = this.types.STATIC
   this.handler = null
   this.numberOfChildren = 0
   this.wildcardChild = null
-  this.versions = versions
   return this
 }
 
@@ -129,27 +127,6 @@ Node.prototype.findChild = function (path) {
   return null
 }
 
-Node.prototype.findVersionChild = function (version, path) {
-  var child = this.children[path[0]]
-  if (child !== undefined && (child.numberOfChildren > 0 || child.getVersionHandler(version) !== null)) {
-    if (path.slice(0, child.prefix.length) === child.prefix) {
-      return child
-    }
-  }
-
-  child = this.children[':']
-  if (child !== undefined && (child.numberOfChildren > 0 || child.getVersionHandler(version) !== null)) {
-    return child
-  }
-
-  child = this.children['*']
-  if (child !== undefined && (child.numberOfChildren > 0 || child.getVersionHandler(version) !== null)) {
-    return child
-  }
-
-  return null
-}
-
 Node.prototype.setHandler = function (handler, params, store) {
   if (!handler) return
 
@@ -164,26 +141,6 @@ Node.prototype.setHandler = function (handler, params, store) {
     store: store || null,
     paramsLength: params.length
   }
-}
-
-Node.prototype.setVersionHandler = function (version, handler, params, store) {
-  if (!handler) return
-
-  assert(
-    !this.versions.get(version),
-    `There is already an handler with version '${version}' and method '${this.method}'`
-  )
-
-  this.versions.set(version, {
-    handler: handler,
-    params: params,
-    store: store || null,
-    paramsLength: params.length
-  })
-}
-
-Node.prototype.getVersionHandler = function (version) {
-  return this.versions.get(version)
 }
 
 module.exports = Node
