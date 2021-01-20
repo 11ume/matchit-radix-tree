@@ -3,14 +3,12 @@ export const types = {
     , PARAM: 1
     , MATCH_ALL: 2
     , REGEX: 3
-    // It's used for a parameter, that is followed by another parameter in the same part
     , MULTI_PARAM: 4
 }
 
 function Node (options = {}) {
     this.prefix = options.prefix || '/'
     this.label = this.prefix[0]
-    this.method = options.method // just for debugging and error messages
     this.children = options.children || {}
     this.numberOfChildren = Object.keys(this.children).length
     this.kind = options.kind || this.types.STATIC
@@ -119,13 +117,11 @@ Node.prototype.findChild = function (path) {
     return null
 }
 
-Node.prototype.setHandler = function (handler, params, store) {
+Node.prototype.setHandler = function (handler, params) {
     if (!handler) return
-
     this.handler = {
         handler: handler
         , params: params
-        , store: store || null
         , paramsLength: params.length
     }
 }

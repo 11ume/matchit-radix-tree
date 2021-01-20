@@ -1,15 +1,3 @@
-/* eslint-disable no-param-reassign */
-/*
-  Char codes:
-    '#': 35
-    '*': 42
-    '-': 45
-    '/': 47
-    ':': 58
-    ';': 59
-    '?': 63
-*/
-
 import http from 'http'
 import fastDecode from 'fast-decode-uri-component'
 import Node, { types as NODE_TYPES } from './node.js'
@@ -28,33 +16,21 @@ function sanitizeUrl (url) {
 function Router () {
     this.onBadUrl = null
     this.caseSensitive = true
-    this.ignoreTrailingSlash = false
     this.maxParamLength = 100
     this.trees = {}
     this.routes = []
 }
 
-Router.prototype.on = function (method, path, opts, handler) {
-    if (typeof opts === 'function') {
-        handler = opts
-        opts = {}
-    }
-
-    this._on(method, path, opts, handler)
-
-    if (this.ignoreTrailingSlash && path !== '/' && !path.endsWith('*')) {
-        if (path.endsWith('/')) {
-            this._on(method, path.slice(0, -1), opts, handler)
-        } else {
-            this._on(method, path + '/', opts, handler)
-        }
-    }
+Router.prototype.on = function (method, path, handler) {
+    this._on(method, path, handler)
 }
 
-Router.prototype._on = function (method, path, opts, handler) {
+Router.prototype._on = function (method, inPath, handler) {
+    let path = inPath
+
     if (Array.isArray(method)) {
         for (let k = 0; k < method.length; k++) {
-            this._on(method[k], path, opts, handler)
+            this._on(method[k], path, handler)
         }
         return
     }
@@ -65,7 +41,6 @@ Router.prototype._on = function (method, path, opts, handler) {
     this.routes.push({
         method: method
         , path: path
-        , opts: opts
         , handler: handler
     })
 
@@ -138,7 +113,8 @@ Router.prototype._on = function (method, path, opts, handler) {
     this._insert(method, path, NODE_TYPES.STATIC, params, handler, null)
 }
 
-Router.prototype._insert = function _insert (method, path, kind, params, handler) {
+Router.prototype._insert = function _insert (method, inPath, kind, params, handler) {
+    let path = inPath
     let prefix = ''
     let pathLen = 0
     let prefixLen = 0
@@ -244,11 +220,10 @@ Router.prototype.off = function off (method, path) {
     }
 
     // Rebuild tree without the specific route
-    const ignoreTrailingSlash = this.ignoreTrailingSlash
-    let newRoutes = self.routes.filter(function (route) {
-        if (!ignoreTrailingSlash) {
-            return !(method === route.method && path === route.path)
-        }
+    const newRoutes = self.routes.filter(function (route) {
+        // if (!ignoreTrailingSlash) {
+        //     return !(method === route.method && path === route.path)
+        // }
         if (path.endsWith('/')) {
             const routeMatches = path === route.path || path.slice(0, -1) === route.path
             return !(method === route.method && routeMatches)
@@ -256,16 +231,7 @@ Router.prototype.off = function off (method, path) {
         const routeMatches = path === route.path || (path + '/') === route.path
         return !(method === route.method && routeMatches)
     })
-    if (ignoreTrailingSlash) {
-        newRoutes = newRoutes.filter(function (route, i, ar) {
-            if (route.path.endsWith('/') && i < ar.length - 1) {
-                return route.path.slice(0, -1) !== ar[i + 1].path
-            } else if (route.path.endsWith('/') === false && i < ar.length - 1) {
-                return (route.path + '/') !== ar[i + 1].path
-            }
-            return true
-        })
-    }
+
     self.reset()
     newRoutes.forEach(function (route) {
         self.on(route.method, route.path, route.opts, route.handler)
@@ -278,7 +244,8 @@ Router.prototype.lookup = function lookup (req, res) {
     return handle.handler(req, res, handle.params)
 }
 
-Router.prototype.find = function find (method, path) {
+Router.prototype.find = function find (method, inPath) {
+    let path = inPath
     let currentNode = this.trees[method]
     if (!currentNode) return null
 
