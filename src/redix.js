@@ -490,5 +490,5 @@ for (const i in http.METHODS) {
     }
 }
 
-export default Router
+module.exports = Router
 
