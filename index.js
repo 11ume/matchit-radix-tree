@@ -17,7 +17,6 @@ const httpMethods = http.METHODS
 const FULL_PATH_REGEXP = /^https?:\/\/.*?\//
 
 function Router () {
-  this.onBadUrl = null
   this.caseSensitive = true
   this.ignoreTrailingSlash = false
   this.maxParamLength = 100
@@ -130,7 +129,6 @@ Router.prototype._on = function _on (method, path, opts, handler) {
 }
 
 Router.prototype._insert = function _insert (method, path, kind, params, handler) {
-  const route = path
   var prefix = ''
   var pathLen = 0
   var prefixLen = 0
@@ -379,9 +377,7 @@ Router.prototype.find = function find (method, path) {
       if (i > maxParamLength) return null
       decoded = fastDecode(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
       if (decoded === null) {
-        return this.onBadUrl !== null
-          ? this._onBadUrl(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
-          : null
+        return null
       }
       params[pindex++] = decoded
       path = path.slice(i)
@@ -393,9 +389,7 @@ Router.prototype.find = function find (method, path) {
     if (kind === NODE_TYPES.MATCH_ALL) {
       decoded = fastDecode(originalPath.slice(idxInOriginalPath))
       if (decoded === null) {
-        return this.onBadUrl !== null
-          ? this._onBadUrl(originalPath.slice(idxInOriginalPath))
-          : null
+        return null
       }
       params[pindex] = decoded
       currentNode = node
@@ -417,9 +411,7 @@ Router.prototype.find = function find (method, path) {
       }
       decoded = fastDecode(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
       if (decoded === null) {
-        return this.onBadUrl !== null
-          ? this._onBadUrl(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
-          : null
+        return null
       }
       params[pindex++] = decoded
       path = path.slice(i)
@@ -435,9 +427,7 @@ Router.prototype._getWildcardNode = function (node, path, len) {
   if (node === null) return null
   var decoded = fastDecode(path.slice(-len))
   if (decoded === null) {
-    return this.onBadUrl !== null
-      ? this._onBadUrl(path.slice(-len))
-      : null
+    return null
   }
   var handle = node.handler
   if (handle !== null && handle !== undefined) {
