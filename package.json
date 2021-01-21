@@ -4,9 +4,6 @@
   "main": "index.js",
   "license": "MIT",
   "type": "module",
-  "dependencies": {
-    "fast-decode-uri-component": "^1.0.1"
-  },
   "devDependencies": {
     "@types/node": "^14.14.20",
     "babel-eslint": "^10.1.0",

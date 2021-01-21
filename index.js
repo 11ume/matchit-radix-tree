@@ -1,5 +1,3 @@
-import http from 'http'
-import fastDecode from 'fast-decode-uri-component'
 import Node, { NODE_TYPES } from './node.js'
 
 function sanitizeUrl(url) {
@@ -17,12 +15,11 @@ class Router {
     constructor() {
         this.onBadUrl = null
         this.maxParamLength = 100
-
         this.trees = {}
-        this.routes = []
     }
 
-    searchParametricRoutes(method, inPath, handler) {
+    // search params in parametric route and search wildcard characters in routes
+    serchParams(method, inPath, handler) {
         let path = inPath
         const params = []
 
@@ -67,37 +64,22 @@ class Router {
                 this.insert(method, staticPart, nodeType, params, null)
 
                 i--
-            }
-        }
-    }
+            } else if (path[i] === '*') {
+                // wildcard route
+                if (path[i] === '*') {
+                    this.insert(method, path.slice(0, i), NODE_TYPES.STATIC, null, null)
 
-    searchWildCardRouter(method, path, handler) {
-        const params = []
-        for (let i = 0, len = path.length; i < len; i++) {
-            // wildcard route
-            if (path[i] === '*') {
-                this.insert(method, path.slice(0, i), NODE_TYPES.STATIC, null, null)
-
-                // add the wildcard parameter
-                params.push('*')
-                this.insert(method, path.slice(0, len), NODE_TYPES.MATCH_ALL, params, handler)
+                    // add the wildcard parameter
+                    params.push('*')
+                    this.insert(method, path.slice(0, len), NODE_TYPES.MATCH_ALL, params, handler)
+                }
             }
         }
     }
 
     // search for parametric or wildcard routes
-    searchParametricOrWildcardRoutes(method, path, handler) {
-        this.searchParametricRoutes(method, path, handler)
-    }
-
-    on(method, inPath, handler) {
-        this.routes.push({
-            path: inPath
-            , method: method
-            , handler: handler
-        })
-
-        this.searchParametricOrWildcardRoutes(method, inPath, handler)
+    create(method, path, handler) {
+        this.serchParams(method, path, handler)
     }
 
     // private
@@ -190,53 +172,21 @@ class Router {
         }
     }
 
-    reset() {
-        this.trees = {}
-        this.routes = []
-    }
-
-    off(method, path) {
-        const self = this
-
-        if (Array.isArray(method)) {
-            return method.map(function (meth) {
-                return self.off(meth, path)
-            })
-        }
-
-        // Rebuild tree without the specific route
-        const newRoutes = self.routes.filter(function (route) {
-            // if (!ignoreTrailingSlash) {
-            //     return !(method === route.method && path === route.path)
-            // }
-            if (path.endsWith('/')) {
-                const routeMatches = path === route.path || path.slice(0, -1) === route.path
-                return !(method === route.method && routeMatches)
-            }
-            const routeMatches = path === route.path || (path + '/') === route.path
-            return !(method === route.method && routeMatches)
-        })
-
-        self.reset()
-        newRoutes.forEach(function (route) {
-            self.on(route.method, route.path, route.handler)
-        })
-    }
-
     lookup(req, res) {
         const handle = this.find(req.method, sanitizeUrl(req.url))
-        if (handle === null) { return this.handleNotFound(req, res) }
+        if (handle === null) {
+            return this.handleNotFound(req, res)
+        }
         return handle.handler(req, res, handle.params)
     }
 
     find(method, inPath) {
         let path = inPath
         let currentNode = this.trees[method]
-        if (!currentNode) { return null }
+        if (!currentNode) {
+            return null
+        }
 
-        // if (path.charCodeAt(0) !== 47) { // 47 is '/'
-        //   path = path.replace(FULL_PATH_REGEXP, '/')
-        // }
         const originalPath = path
         const originalPathLength = path.length
 
@@ -336,7 +286,7 @@ class Router {
                 i = path.indexOf('/')
                 if (i === -1) { i = pathLen }
                 if (i > maxParamLength) { return null }
-                decoded = fastDecode(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
+                decoded = originalPath.slice(idxInOriginalPath, idxInOriginalPath + i)
                 if (decoded === null) {
                     return this.onBadUrl !== null
                         ? this.onBadUrl(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
@@ -350,7 +300,7 @@ class Router {
 
             // wildcard route
             if (kind === NODE_TYPES.MATCH_ALL) {
-                decoded = fastDecode(originalPath.slice(idxInOriginalPath))
+                decoded = originalPath.slice(idxInOriginalPath)
                 if (decoded === null) {
                     return this.onBadUrl !== null
                         ? this.onBadUrl(originalPath.slice(idxInOriginalPath))
@@ -374,7 +324,7 @@ class Router {
                     while (i < pathLen && path.charCodeAt(i) !== 47) { i++ }
                     if (i > maxParamLength) { return null }
                 }
-                decoded = fastDecode(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
+                decoded = originalPath.slice(idxInOriginalPath, idxInOriginalPath + i)
                 if (decoded === null) {
                     return this.onBadUrl !== null
                         ? this.onBadUrl(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))
@@ -392,8 +342,11 @@ class Router {
 
     // private
     getWildcardNode(node, path, len) {
-        if (node === null) { return null }
-        const decoded = fastDecode(path.slice(-len))
+        if (node === null) {
+            return null
+        }
+
+        const decoded = path.slice(-len)
         if (decoded === null) {
             return this.onBadUrl !== null
                 ? this.onBadUrl(path.slice(-len))
@@ -424,18 +377,6 @@ class Router {
             handler: (req, res) => onBadUrl(path, req, res)
             , params: {}
         }
-    }
-}
-
-for (const i in http.METHODS) {
-    if (!http.METHODS.hasOwnProperty(i)) continue
-    const m = http.METHODS[i]
-    const methodName = m.toLowerCase()
-
-    if (Router.prototype[methodName]) throw new Error('Method already exists: ' + methodName)
-
-    Router.prototype[methodName] = function (path, handler) {
-        return this.on(m, path, handler)
     }
 }
 
