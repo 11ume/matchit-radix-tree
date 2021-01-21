@@ -285,10 +285,9 @@ class Router {
                 idxInOriginalPath += len
             }
 
-            let node = currentNode.findChild(path)
+            const node = currentNode.findChild(path)
 
             if (node === null) {
-                node = currentNode.parametricBrother
                 if (node === null) {
                     return this.getWildcardNode(wildcardNode, originalPath, pathLenWildcard)
                 }
