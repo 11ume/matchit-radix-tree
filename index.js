@@ -1,6 +1,6 @@
 import http from 'http'
 import fastDecode from 'fast-decode-uri-component'
-import Node, { types as NODE_TYPES } from './node.js'
+import Node, { NODE_TYPES } from './node.js'
 
 function sanitizeUrl(url) {
     for (let i = 0, len = url.length; i < len; i++) {
@@ -16,91 +16,88 @@ function sanitizeUrl(url) {
 class Router {
     constructor() {
         this.onBadUrl = null
-        this.caseSensitive = true
         this.maxParamLength = 100
 
         this.trees = {}
         this.routes = []
     }
 
-    on(method, inPath, handler) {
+    searchParametricRoutes(method, inPath, handler) {
         let path = inPath
-        let j = 0
         const params = []
 
-        this.routes.push({
-            method: method
-            , path: path
-            , handler: handler
-        })
-
-        for (let i = 0, len = path.length; i < len; i++) {
-            // search for parametric or wildcard routes
+        for (let i = 0, jump, len = path.length; i < len; i++) {
             // parametric route
-            if (path.charCodeAt(i) === 58) {
+            if (path[i] === ':') {
                 let nodeType = NODE_TYPES.PARAM
-                j = i + 1
                 let staticPart = path.slice(0, i)
-
-                if (this.caseSensitive === false) {
-                    staticPart = staticPart.toLowerCase()
-                }
+                jump = i + 1
 
                 // add the static part of the route to the tree
-                this.insert(method, staticPart, NODE_TYPES.STATIC, null, null, null, null)
+                this.insert(method, staticPart, NODE_TYPES.STATIC, null, null)
 
-                // isolate the parameter name
-                while (i < len && path.charCodeAt(i) !== 47) {
-                    if (path.charCodeAt(i) !== 45) {
-                        i++
-                    } else {
-                        break
-                    }
+                // isolate the parameter name : aisla el nombre del parametro
+                // :foo/
+                while (i < len && path[i] !== '/') {
+                    i++
                 }
 
-                if (i < len && path.charCodeAt(i) !== 47) {
+                if (i < len && path[i] !== '/') {
                     nodeType = NODE_TYPES.MULTI_PARAM
                 }
 
-                const parameter = path.slice(j, i)
-
+                const parameter = path.slice(jump, i)
                 params.push(parameter.slice(0, i))
 
-                path = path.slice(0, j) + path.slice(i)
-                i = j
+                path = path.slice(0, jump) + path.slice(i)
+                i = jump
                 len = path.length
 
                 // if the path is ended
                 if (i === len) {
                     let completedPath = path.slice(0, i)
-                    if (this.caseSensitive === false) {
-                        completedPath = completedPath.toLowerCase()
-                    }
-                    return this.insert(method, completedPath, nodeType, params, handler)
+                    completedPath = completedPath.toLowerCase()
+                    this.insert(method, completedPath, nodeType, params, handler)
+                    return
                 }
+
                 // add the parameter and continue with the search
                 staticPart = path.slice(0, i)
-                if (this.caseSensitive === false) {
-                    staticPart = staticPart.toLowerCase()
-                }
-                this.insert(method, staticPart, nodeType, params, null, null)
+                staticPart = staticPart.toLowerCase()
+                this.insert(method, staticPart, nodeType, params, null)
 
                 i--
-                // wildcard route
-            } else if (path.charCodeAt(i) === 42) {
-                this.insert(method, path.slice(0, i), NODE_TYPES.STATIC, null, null, null, null)
-                // add the wildcard parameter
-                params.push('*')
-                return this.insert(method, path.slice(0, len), NODE_TYPES.MATCH_ALL, params, handler, null)
             }
         }
+    }
 
-        if (this.caseSensitive === false) {
-            path = path.toLowerCase()
+    searchWildCardRouter(method, path, handler) {
+        const params = []
+        for (let i = 0, len = path.length; i < len; i++) {
+            // wildcard route
+            if (path[i] === '*') {
+                this.insert(method, path.slice(0, i), NODE_TYPES.STATIC, null, null)
+
+                // add the wildcard parameter
+                params.push('*')
+                this.insert(method, path.slice(0, len), NODE_TYPES.MATCH_ALL, params, handler)
+            }
         }
+    }
 
-        // static route
-        this.insert(method, path, NODE_TYPES.STATIC, params, handler, null)
+    // search for parametric or wildcard routes
+    searchParametricOrWildcardRoutes(method, path, handler) {
+        this.searchParametricRoutes(method, path, handler)
+    }
+
+    on(method, inPath, handler) {
+        this.routes.push({
+            path: inPath
+            , method: method
+            , handler: handler
+        })
+
+        this.searchParametricOrWildcardRoutes(method, inPath, handler)
     }
 
     // private
@@ -115,9 +112,7 @@ class Router {
 
         let currentNode = this.trees[method]
         if (typeof currentNode === 'undefined') {
-            currentNode = new Node({
-                method: method
-            })
+            currentNode = new Node()
             this.trees[method] = currentNode
         }
 
@@ -136,8 +131,7 @@ class Router {
             if (len < prefixLen) {
                 node = new Node(
                     {
-                        method: method
-                        , prefix: prefix.slice(len)
+                        prefix: prefix.slice(len)
                         , children: currentNode.children
                         , kind: currentNode.kind
                         , handler: currentNode.handler
@@ -159,9 +153,8 @@ class Router {
                     currentNode.kind = kind
                 } else {
                     node = new Node({
-                        method: method
-                        , prefix: path.slice(len)
-                        , kind: kind
+                        prefix: path.slice(len)
+                        , kind
                         , handlers: null
                     })
 
@@ -183,7 +176,8 @@ class Router {
                 }
                 // there are not children within the given label, let's create a new one!
                 node = new Node({
-                    method: method, prefix: path, kind: kind
+                    kind
+                    , prefix: path
                 })
                 node.setHandler(handler, params)
                 currentNode.addChild(node)
@@ -245,10 +239,6 @@ class Router {
         // }
         const originalPath = path
         const originalPathLength = path.length
-
-        if (this.caseSensitive === false) {
-            path = path.toLowerCase()
-        }
 
         const maxParamLength = this.maxParamLength
         let wildcardNode = null
@@ -382,7 +372,7 @@ class Router {
                     if (matchedParameter === null) { return null }
                     i = matchedParameter[1].length
                 } else {
-                    while (i < pathLen && path.charCodeAt(i) !== 47 && path.charCodeAt(i) !== 45) { i++ }
+                    while (i < pathLen && path.charCodeAt(i) !== 47) { i++ }
                     if (i > maxParamLength) { return null }
                 }
                 decoded = fastDecode(originalPath.slice(idxInOriginalPath, idxInOriginalPath + i))

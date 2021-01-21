@@ -1,4 +1,4 @@
-export const types = {
+export const NODE_TYPES = {
     STATIC: 0
     , PARAM: 1
     , MATCH_ALL: 2
@@ -7,14 +7,19 @@ export const types = {
 }
 
 class Node {
-    constructor(options = {}) {
-        this.types = types
-        this.prefix = options.prefix || '/'
-        this.label = this.prefix[0]
-        this.children = options.children || {}
+    constructor({
+        prefix = '/'
+        , children = {}
+        , kind = NODE_TYPES.STATIC
+        , handler
+    } = {}) {
+        this.types = NODE_TYPES
+        this.prefix = prefix
+        this.label = prefix[0]
+        this.children = children
         this.numberOfChildren = Object.keys(this.children).length
-        this.kind = options.kind || this.types.STATIC
-        this.handler = options.handler
+        this.kind = kind
+        this.handler = handler
         this.wildcardChild = null
         this.parametricBrother = null
     }

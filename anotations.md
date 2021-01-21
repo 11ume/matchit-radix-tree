@@ -1,0 +1,1 @@
+charcode el 45 puede ser omitido
