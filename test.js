@@ -7,7 +7,8 @@ r.create('GET', '/users/:foo/:id', (req, res, params) => {
 })
 
 const server = createServer((req, res) => {
-    r.lookup(req, res)
+    const found = r.lookup(req)
+    found.handler(req, res, found.params)
 })
 
 server.listen(3000, err => {

@@ -2,25 +2,22 @@ export const NODE_TYPES = {
     STATIC: 0
     , PARAM: 1
     , MATCH_ALL: 2
-    , REGEX: 3
-    , MULTI_PARAM: 4
 }
 
 class Node {
     constructor({
         prefix = '/'
-        , children = {}
         , kind = NODE_TYPES.STATIC
         , handler
+        , children = {}
     } = {}) {
-        this.types = NODE_TYPES
         this.prefix = prefix
         this.label = prefix[0]
-        this.children = children
-        this.numberOfChildren = Object.keys(this.children).length
         this.kind = kind
         this.handler = handler
+        this.children = children
         this.wildcardChild = null
+        this.numberOfChildren = Object.keys(children).length
     }
 
     getLabel() {
@@ -30,15 +27,13 @@ class Node {
     addChild(node) {
         let label = ''
         switch (node.kind) {
-            case this.types.STATIC:
+            case NODE_TYPES.STATIC:
                 label = node.getLabel()
                 break
-            case this.types.PARAM:
-            case this.types.REGEX:
-            case this.types.MULTI_PARAM:
+            case NODE_TYPES.PARAM:
                 label = ':'
                 break
-            case this.types.MATCH_ALL:
+            case NODE_TYPES.MATCH_ALL:
                 this.wildcardChild = node
                 label = '*'
                 break
@@ -54,7 +49,7 @@ class Node {
                 return
             }
 
-            if (nod.kind !== this.types.STATIC) {
+            if (nod.kind !== NODE_TYPES.STATIC) {
                 return
             }
 
@@ -72,7 +67,7 @@ class Node {
     reset(prefix) {
         this.prefix = prefix
         this.children = {}
-        this.kind = this.types.STATIC
+        this.kind = NODE_TYPES.STATIC
         this.handler = null
         this.numberOfChildren = 0
         this.wildcardChild = null
@@ -105,11 +100,12 @@ class Node {
     }
 
     setHandler(handler, params) {
-        if (!handler) { return }
+        if (!handler) return
+        const paramsLength = params.length
         this.handler = {
-            handler: handler
-            , params: params
-            , paramsLength: params.length
+            handler
+            , params
+            , paramsLength
         }
     }
 }

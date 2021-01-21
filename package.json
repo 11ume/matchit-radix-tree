@@ -1,5 +1,5 @@
 {
-  "name": "redix-tree-router",
+  "name": "radix-tree-router",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
