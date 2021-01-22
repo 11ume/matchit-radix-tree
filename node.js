@@ -18,6 +18,7 @@ class Node {
         this.children = children
         this.wildcardChild = null
         this.numberOfChildren = Object.keys(children).length
+        this.parametricBrother = null
     }
 
     getLabel() {
@@ -44,6 +45,16 @@ class Node {
         this.children[label] = node
         this.numberOfChildren = Object.keys(this.children).length
 
+        const labels = Object.keys(this.children)
+        let parametricBrother = this.parametricBrother
+        for (let i = 0; i < labels.length; i++) {
+            const child = this.children[labels[i]]
+            if (child.label === ':') {
+                parametricBrother = child
+                break
+            }
+        }
+
         const iterate = (nod) => {
             if (!nod) {
                 return
@@ -51,6 +62,10 @@ class Node {
 
             if (nod.kind !== NODE_TYPES.STATIC) {
                 return
+            }
+
+            if (node !== this) {
+                node.parametricBrother = parametricBrother || node.parametricBrother
             }
 
             const lab = Object.keys(nod.children)

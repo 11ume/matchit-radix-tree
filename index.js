@@ -1,27 +1,46 @@
 import Node, { NODE_TYPES } from './node.js'
+import { sanitizeUrl, groupParams as paramsToObject } from './src/utils.js'
 
 class Router {
-    constructor() {
+    constructor({ maxParamLength = 100 } = {}) {
         this.trees = {}
-        this.maxParamLength = 100
+        this.maxParamLength = maxParamLength
     }
 
     lookup(req) {
-        const url = this.sanitizeUrl(req.url)
+        const url = sanitizeUrl(req.url)
         return this.find(req.method, url)
+    }
+
+    isRouteFound(currentNode, paramsIn) {
+        const handler = currentNode.handler
+        if (handler !== null && handler !== undefined) {
+            if (handler.paramsLength > 0) {
+                const params = paramsToObject(handler, paramsIn, handler.params)
+                return {
+                    handler: handler.handler
+                    , params
+                }
+            }
+
+            return {
+                handler: handler.handler
+                , params: {}
+            }
+        }
+
+        return null
     }
 
     find(method, inPath) {
         let path = inPath
         let currentNode = this.trees[method]
-        if (!currentNode) {
-            return null
-        }
 
+        // input params
+        const paramsIn = []
         const originalPath = path
-        const originalPathLength = path.length
         const maxParamLength = this.maxParamLength
-        const params = []
+        const originalPathLength = path.length
 
         let i = 0
         let param = null
@@ -31,29 +50,16 @@ class Router {
         let idxInOriginalPath = 0
 
         while (true) {
-            let pathLen = path.length
             const prefix = currentNode.prefix
             const prefixLen = prefix.length
             let len = 0
+            let pathLen = path.length
             let previousPath = path
+
             // found the route
             if (pathLen === 0 || path === prefix) {
-                const handle = currentNode.handler
-                if (handle !== null && handle !== undefined) {
-                    const paramsObj = {}
-                    if (handle.paramsLength > 0) {
-                        const paramNames = handle.params
-
-                        for (i = 0; i < handle.paramsLength; i++) {
-                            paramsObj[paramNames[i]] = params[i]
-                        }
-                    }
-
-                    return {
-                        handler: handle.handler
-                        , params: paramsObj
-                    }
-                }
+                const found = this.isRouteFound(currentNode, paramsIn)
+                if (found) return found
             }
 
             // search for the longest common prefix
@@ -68,11 +74,13 @@ class Router {
                 idxInOriginalPath += len
             }
 
-            const node = currentNode.findChild(path)
+            let node = currentNode.findChild(path)
 
             if (node === null) {
+                node = currentNode.parametricBrother
                 if (node === null) {
-                    return this.getWildcardNode(wildcardNode, originalPath, pathLenWildcard)
+                    this.getWildcardNode(wildcardNode, originalPath, pathLenWildcard)
+                    return
                 }
 
                 const goBack = previousPath.charCodeAt(0) === 47 ? previousPath : '/' + previousPath
@@ -131,7 +139,7 @@ class Router {
                     return null
                 }
 
-                params[pindex++] = param
+                paramsIn[pindex++] = param
                 path = path.slice(i)
                 idxInOriginalPath += i
                 continue
@@ -143,7 +151,8 @@ class Router {
                 if (param === null) {
                     return null
                 }
-                params[pindex] = param
+
+                paramsIn[pindex] = param
                 currentNode = node
                 path = ''
                 continue
@@ -153,28 +162,18 @@ class Router {
         }
     }
 
-    sanitizeUrl(url) {
-        for (let i = 0, len = url.length; i < len; i++) {
-            const charCode = url.charCodeAt(i)
-            if (charCode === 63 || charCode === 59 || charCode === 35) {
-                return url.slice(0, i)
-            }
-        }
-
-        return url
-    }
-
     // search params in parametric route and search wildcard characters in routes
     serchParams(method, inPath, handler) {
         let path = inPath
         const params = []
 
+        // /users/:id
         for (let i = 0, jump, len = path.length; i < len; i++) {
             // parametric route
             if (path[i] === ':') {
                 const nodeType = NODE_TYPES.PARAM
-                let staticPart = path.slice(0, i)
                 jump = i + 1
+                let staticPart = path.slice(0, i)
 
                 // add the static part of the route to the tree
                 this.insert(method, staticPart, NODE_TYPES.STATIC, null, null)
@@ -218,8 +217,8 @@ class Router {
             }
         }
 
-        // static route
-        this._insert(method, path, NODE_TYPES.STATIC, params, handler)
+        // static route /users
+        this.insert(method, path, NODE_TYPES.STATIC, params, handler)
     }
 
     // search for parametric or wildcard routes
@@ -235,8 +234,8 @@ class Router {
         let prefix = ''
         let pathLen = 0
         let prefixLen = 0
-
         let currentNode = this.trees[method]
+
         if (typeof currentNode === 'undefined') {
             currentNode = new Node()
             this.trees[method] = currentNode
@@ -309,11 +308,8 @@ class Router {
 
                 node.setHandler(handler, params)
                 currentNode.addChild(node)
-
-                // the node already exist
-            } else if (handler) {
-                currentNode.setHandler(handler, params)
             }
+
             return
         }
     }
