@@ -1,4 +1,4 @@
-import Node, { NODE_TYPES } from './node.js'
+import Node, { NODE_TYPE } from './node.js'
 import { sanitizeUrl, groupParams as paramsToObject } from './src/utils.js'
 
 class Router {
@@ -15,6 +15,7 @@ class Router {
     isRouteFound(currentNode, paramsIn) {
         const handler = currentNode.handler
         if (handler !== null && handler !== undefined) {
+            // output params
             if (handler.paramsLength > 0) {
                 const params = paramsToObject(handler, paramsIn, handler.params)
                 return {
@@ -36,8 +37,7 @@ class Router {
         let path = inPath
         let currentNode = this.trees[method]
 
-        // input params
-        const paramsIn = []
+        const paramsIn = [] // input params
         const originalPath = path
         const maxParamLength = this.maxParamLength
         const originalPathLength = path.length
@@ -52,6 +52,7 @@ class Router {
         while (true) {
             const prefix = currentNode.prefix
             const prefixLen = prefix.length
+
             let len = 0
             let pathLen = path.length
             let previousPath = path
@@ -98,10 +99,11 @@ class Router {
                 len = prefixLen
             }
 
-            const kind = node.kind
+            // node type
+            const type = node.type
 
             // static route
-            if (kind === NODE_TYPES.STATIC) {
+            if (type === NODE_TYPE.STATIC) {
                 // if exist, save the wildcard child
                 if (currentNode.wildcardChild !== null) {
                     wildcardNode = currentNode.wildcardChild
@@ -123,7 +125,7 @@ class Router {
             }
 
             // parametric route
-            if (kind === NODE_TYPES.PARAM) {
+            if (type === NODE_TYPE.PARAM) {
                 currentNode = node
                 i = path.indexOf('/')
                 if (i === -1) {
@@ -146,7 +148,7 @@ class Router {
             }
 
             // wildcard route
-            if (kind === NODE_TYPES.MATCH_ALL) {
+            if (type === NODE_TYPE.MATCH_ALL) {
                 param = originalPath.slice(idxInOriginalPath)
                 if (param === null) {
                     return null
@@ -171,12 +173,12 @@ class Router {
         for (let i = 0, jump, len = path.length; i < len; i++) {
             // parametric route
             if (path[i] === ':') {
-                const nodeType = NODE_TYPES.PARAM
+                const nodeType = NODE_TYPE.PARAM
                 jump = i + 1
                 let staticPart = path.slice(0, i)
 
                 // add the static part of the route to the tree
-                this.insert(method, staticPart, NODE_TYPES.STATIC, null, null)
+                this.insert(method, staticPart, NODE_TYPE.STATIC, null, null)
 
                 // isolate the parameter name :foo
                 while (i < len && path[i] !== '/') {
@@ -207,18 +209,18 @@ class Router {
             } else if (path[i] === '*') {
                 // wildcard route
                 if (path[i] === '*') {
-                    this.insert(method, path.slice(0, i), NODE_TYPES.STATIC, null, null)
+                    this.insert(method, path.slice(0, i), NODE_TYPE.STATIC, null, null)
 
                     // add the wildcard parameter
                     params.push('*')
-                    this.insert(method, path.slice(0, len), NODE_TYPES.MATCH_ALL, params, handler)
+                    this.insert(method, path.slice(0, len), NODE_TYPE.MATCH_ALL, params, handler)
                     return
                 }
             }
         }
 
         // static route /users
-        this.insert(method, path, NODE_TYPES.STATIC, params, handler)
+        this.insert(method, path, NODE_TYPE.STATIC, params, handler)
     }
 
     // search for parametric or wildcard routes
@@ -226,7 +228,7 @@ class Router {
         this.serchParams(method, path, handler)
     }
 
-    insert(method, inPath, kind, params, handler) {
+    insert(method, inPath, type, params, handler) {
         let path = inPath
         let len = 0
         let max = 0
@@ -259,7 +261,7 @@ class Router {
                 node = new Node({
                     prefix: prefix.slice(len)
                     , children: currentNode.children
-                    , kind: currentNode.kind
+                    , type: currentNode.type
                     , handler: currentNode.handler
                 })
 
@@ -276,11 +278,11 @@ class Router {
                 // the handler should be added to the current node, to a child otherwise
                 if (len === pathLen) {
                     currentNode.setHandler(handler, params)
-                    currentNode.kind = kind
+                    currentNode.type = type
                 } else {
                     node = new Node({
                         prefix: path.slice(len)
-                        , kind
+                        , type
                         , handlers: null
                     })
 
@@ -302,7 +304,7 @@ class Router {
                 }
                 // there are not children within the given label, let's create a new one!
                 node = new Node({
-                    kind
+                    type
                     , prefix: path
                 })
 

@@ -14,7 +14,8 @@ function handler(req, res, params) {
 // curl http://localhost:3000/users :: status 404
 
 // r.create('GET', '/users/:foo/:id', handler)
-r.create('GET', '/u/:i', handler)
+r.create('GET', '/a/foo/bar/e/:i', handler)
+r.create('GET', '/a/foo/bar/:i', handler)
 // r.create('GET', '/books/:genre/*', (req, res, params) => {
 //     res.end('{"message":"hello world"}' + params.genre + params['*'])
 // })

@@ -1,4 +1,4 @@
-export const NODE_TYPES = {
+export const NODE_TYPE = {
     STATIC: 0
     , PARAM: 1
     , MATCH_ALL: 2
@@ -7,13 +7,13 @@ export const NODE_TYPES = {
 class Node {
     constructor({
         prefix = '/'
-        , kind = NODE_TYPES.STATIC
+        , type = NODE_TYPE.STATIC
         , handler
         , children = {}
     } = {}) {
         this.prefix = prefix
         this.label = prefix[0]
-        this.kind = kind
+        this.type = type
         this.handler = handler
         this.children = children
         this.wildcardChild = null
@@ -27,19 +27,19 @@ class Node {
 
     addChild(node) {
         let label = ''
-        switch (node.kind) {
-            case NODE_TYPES.STATIC:
+        switch (node.type) {
+            case NODE_TYPE.STATIC:
                 label = node.getLabel()
                 break
-            case NODE_TYPES.PARAM:
+            case NODE_TYPE.PARAM:
                 label = ':'
                 break
-            case NODE_TYPES.MATCH_ALL:
+            case NODE_TYPE.MATCH_ALL:
                 this.wildcardChild = node
                 label = '*'
                 break
             default:
-                throw new Error(`Unknown node kind: ${node.kind}`)
+                throw new Error(`Unknown node type: ${node.type}`)
         }
 
         this.children[label] = node
@@ -60,7 +60,7 @@ class Node {
                 return
             }
 
-            if (nod.kind !== NODE_TYPES.STATIC) {
+            if (nod.type !== NODE_TYPE.STATIC) {
                 return
             }
 
@@ -82,7 +82,7 @@ class Node {
     reset(prefix) {
         this.prefix = prefix
         this.children = {}
-        this.kind = NODE_TYPES.STATIC
+        this.type = NODE_TYPE.STATIC
         this.handler = null
         this.numberOfChildren = 0
         this.wildcardChild = null
