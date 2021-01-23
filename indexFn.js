@@ -117,10 +117,29 @@ const idNodesByCharType = (path) => path
         }
     })
 
+// moves to the right until the end of the parameter, defined by the next closer slash
+const findParamEndIndex = (path, char, i = 0) => {
+    if (i < path.length && path[i] !== char) return findParamEndIndex(path, char, i + 1)
+    return i
+}
+
+const removeParamName = (reducibles) => reducibles.split('').filter((char) => char === ':' || char === '/').join('')
+
 // map only static parts of parametric route
-const mapNodesByStaticPart = (path, nodes) => nodes.map((node, key) => {
+const mapNodesByStaticPart = (path, nodes) => nodes.map((node) => {
     if (node.type === NODE_TYPE.PARAM) {
-        const staticPart = path.slice(0, key)
+        const start = path.slice(0, node.location)
+        const index = start.indexOf(':')
+        if (index < 0) {
+            return {
+                ...node
+                , staticPart: start
+            }
+        }
+
+        const params = start.slice(index, node.location)
+        const str = removeParamName(params)
+        const staticPart = start.slice(0, index) + str
         return {
             ...node
             , staticPart
@@ -132,17 +151,18 @@ const mapNodesByStaticPart = (path, nodes) => nodes.map((node, key) => {
     }
 })
 
+// isolate the parameters names
 const mapNodesByParams = (path, nodes) => nodes
-    .filter(node => node.type === NODE_TYPE.PARAM)
     .map(node => {
-        // isolate the parameter name
-        const start = node.location
-        let i = start
-        // move right
-        while (i < path.length && path[i] !== '/') i++
+        if (node.type !== NODE_TYPE.PARAM) {
+            return {
+                ...node
+            }
+        }
 
-        const jump = node.location + 1
-        const param = path.slice(jump, i)
+        const jumpChar = node.location + 1
+        const paramEndIndex = findParamEndIndex(path, '/', node.location)
+        const param = path.slice(jumpChar, paramEndIndex)
 
         return {
             ...node
@@ -156,8 +176,7 @@ const serchParams = (method, inPath, handler) => {
     const params = []
     const nodeByCharType = idNodesByCharType(path)
     const nodeByStaticParts = mapNodesByStaticPart(path, nodeByCharType)
-    mapNodesByParams(path, nodeByStaticParts)
-
+    const nodesByParams = mapNodesByParams(path, nodeByStaticParts)
     for (let i = 0, jump, len = path.length; i < len; i++) {
         // parametric route parts
         if (path[i] === ':') {
