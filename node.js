@@ -64,8 +64,8 @@ class Node {
                 return
             }
 
-            if (node !== this) {
-                node.parametricBrother = parametricBrother || node.parametricBrother
+            if (nod !== this) {
+                nod.parametricBrother = parametricBrother || nod.parametricBrother
             }
 
             const lab = Object.keys(nod.children)

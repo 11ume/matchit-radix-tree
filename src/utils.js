@@ -9,9 +9,10 @@ export function sanitizeUrl(url) {
     return url
 }
 
-export function groupParams(handle, params, paramNames) {
+export function groupParams(handler, params) {
     const paramsObj = {}
-    for (let i = 0; i < handle.paramsLength; i++) {
+    const paramNames = handler.params
+    for (let i = 0; i < handler.paramsLength; i++) {
         const key = paramNames[i]
         paramsObj[key] = params[i]
     }
