@@ -366,8 +366,13 @@ const find = (trees, maxParamLength, method, pathIn) => {
     }
 }
 
-export const create = (trees) => (method, path, handler) => {
-    prepareNodes(trees, method, path, handler)
+export const create = (trees) => (method, path, ...handlers) => {
+    if (handlers.length > 1) {
+        prepareNodes(trees, method, path, handlers)
+        return
+    }
+
+    prepareNodes(trees, method, path, handlers[0])
 }
 
 export const lookup = (trees, maxParamLength) => (method, path) => {
