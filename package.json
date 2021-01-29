@@ -4,7 +4,6 @@
   "main": "index.js",
   "types": "index.d.ts",
   "license": "MIT",
-  "type": "module",
   "scripts": {
     "test": "ava"
   },

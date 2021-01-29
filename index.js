@@ -1,2 +1,2 @@
-import matcher from './src/matcher.js'
-export default matcher
+const matcher = require('./src/matcher.js')
+module.exports = matcher

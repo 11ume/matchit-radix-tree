@@ -1,4 +1,4 @@
-export const NODE_TYPE = {
+const NODE_TYPE = {
     STATIC: 0
     , PARAM: 1
     , MATCH_ALL: 2
@@ -133,4 +133,8 @@ class Node {
     }
 }
 
-export default Node
+module.exports = {
+    Node
+    , NODE_TYPE
+}
+

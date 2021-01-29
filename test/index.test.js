@@ -1,5 +1,5 @@
-import test from 'ava'
-import matcher from '../index.js'
+const test = require('ava')
+const matcher = require('../index.js')
 
 test('route match base', (t) => {
     const r = matcher()

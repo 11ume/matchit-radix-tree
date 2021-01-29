@@ -1,5 +1,5 @@
-import Node, { NODE_TYPE } from './node.js'
-import { sanitizeUrl } from './utils.js'
+const { Node, NODE_TYPE } = require('./node.js')
+const { sanitizeUrl } = require('./utils.js')
 
 /*
     char codes
@@ -367,11 +367,11 @@ const find = (trees, maxParamLength, method, pathIn) => {
     }
 }
 
-export const create = (trees) => (method, path, ...handlers) => {
+const create = (trees) => (method, path, ...handlers) => {
     prepareNodes(trees, method, path, handlers)
 }
 
-export const lookup = (trees, maxParamLength) => (method, path) => {
+const lookup = (trees, maxParamLength) => (method, path) => {
     const cleanedPath = sanitizeUrl(path)
     return find(trees, maxParamLength, method, cleanedPath)
 }
@@ -384,4 +384,4 @@ const matcher = (maxParamLength = 100) => {
     }
 }
 
-export default matcher
+module.exports = matcher
