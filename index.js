@@ -5,12 +5,10 @@ class Router {
     constructor({
         maxParamLength = 100
         , caseSensitive = true
-        , ignoreTrailingSlash = false
     } = {}) {
         this.trees = {}
         this.caseSensitive = caseSensitive
         this.maxParamLength = maxParamLength
-        this.ignoreTrailingSlash = ignoreTrailingSlash
     }
 
     lookup(req) {
@@ -164,7 +162,7 @@ class Router {
         }
     }
 
-    orderNodes(method, inPath, handler) {
+    prepareNodes(method, inPath, handler) {
         let path = inPath
         const params = []
 
@@ -269,7 +267,7 @@ class Router {
 
     // search for parametric or wildcard routes
     create(method, path, handler) {
-        this.orderNodes(method, path, handler)
+        this.prepareNodes(method, path, handler)
     }
 
     insertNode({
