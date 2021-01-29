@@ -13,9 +13,9 @@ export type Matcher = {
 };
 
 export type Found = {
-    handler: Handler[]
+    handler: Handler[] | null
+    , handlers: Handler[] | null
     , params: Params
-    , multiHandler: boolean
 };
 
 declare function matcher(maxParamLength?: number): Matcher;

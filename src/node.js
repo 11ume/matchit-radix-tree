@@ -10,7 +10,6 @@ class Node {
         , type = NODE_TYPE.STATIC
         , handler
         , children = {}
-        , multiHandler = false
     } = {}) {
         this.prefix = prefix
         this.label = prefix[0]
@@ -20,7 +19,6 @@ class Node {
         this.wildcardChild = null
         this.numberOfChildren = Object.keys(children).length
         this.parametricBrother = null
-        this.multiHandler = multiHandler
     }
 
     getLabel() {
@@ -116,11 +114,19 @@ class Node {
         return null
     }
 
-    setHandler(handler, params) {
-        if (!handler) return
+    setHandler(handlerIn, params) {
+        if (!handlerIn) return
         const paramsLength = params.length
+        let handlers = null
+        let handler = handlerIn[0]
+        if (handlerIn.length > 1) {
+            handlers = handlerIn
+            handler = null
+        }
+
         this.handler = {
             handler
+            , handlers
             , params
             , paramsLength
         }

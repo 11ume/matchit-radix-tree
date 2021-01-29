@@ -17,9 +17,8 @@ test('route match base multi handler', (t) => {
     r.create('GET', '/', handler, handlerTwo)
     const found = r.lookup('GET', '/')
 
-    t.is(handler, found.handler[0])
-    t.is(handlerTwo, found.handler[1])
-    t.is(true, found.multiHandler)
+    t.is(handler, found.handlers[0])
+    t.is(handlerTwo, found.handlers[1])
 })
 
 test('route match without slash', (t) => {
