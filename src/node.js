@@ -3,12 +3,14 @@ export const NODE_TYPE = {
     , PARAM: 1
     , MATCH_ALL: 2
 }
+
 class Node {
     constructor({
         prefix = '/'
         , type = NODE_TYPE.STATIC
         , handler
         , children = {}
+        , multiHandler = false
     } = {}) {
         this.prefix = prefix
         this.label = prefix[0]
@@ -18,6 +20,7 @@ class Node {
         this.wildcardChild = null
         this.numberOfChildren = Object.keys(children).length
         this.parametricBrother = null
+        this.multiHandler = multiHandler
     }
 
     getLabel() {

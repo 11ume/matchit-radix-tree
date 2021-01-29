@@ -5,9 +5,9 @@ type Params = {
 
 type Handler = (...args: any[]) => any;
 type Lookup = (method: string, path: string) => Found | null;
-type Create = (method: string, path: string, handler: Handler) => Found | null;
+type Create = (method: string, path: string, ...handler: Handler[]) => Found | null;
 
-type Matcher = {
+export type Matcher = {
     lookup: Lookup
     , create: Create
 };
@@ -15,6 +15,7 @@ type Matcher = {
 export type Found = {
     handler: Handler[]
     , params: Params
+    , multiHandler: boolean
 };
 
 declare function matcher(maxParamLength?: number): Matcher;

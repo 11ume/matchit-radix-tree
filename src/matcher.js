@@ -43,6 +43,7 @@ const insertNode = ({
     , path
     , params
     , handler
+    , multiHandler
 }) => {
     let pathIn = path
     let len = 0
@@ -54,7 +55,10 @@ const insertNode = ({
     let currentNode = trees[method]
 
     if (typeof currentNode === 'undefined') {
-        currentNode = new Node()
+        currentNode = new Node({
+            multiHandler
+        })
+
         trees[method] = currentNode
     }
 
@@ -98,7 +102,6 @@ const insertNode = ({
                 node = new Node({
                     prefix: pathIn.slice(len)
                     , type
-                    , handlers: null
                 })
 
                 node.setHandler(handler, params)
@@ -133,7 +136,7 @@ const insertNode = ({
     }
 }
 
-const prepareNodes = (trees, method, inPath, handler) => {
+const prepareNodes = (trees, method, inPath, handler, multiHandler) => {
     let path = inPath
     const params = []
 
@@ -150,6 +153,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
                 , method
                 , path: staticPart
                 , type: NODE_TYPE.STATIC
+                , multiHandler
             })
 
             // isolate the parameter name :foo
@@ -174,6 +178,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
                     , type: nodeType
                     , params
                     , handler
+                    , multiHandler
                 })
                 return
             }
@@ -186,6 +191,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
                 , path: staticPart
                 , type: nodeType
                 , params
+                , multiHandler
             })
 
             i--
@@ -197,6 +203,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
                     , method
                     , path: path.slice(0, i)
                     , type: NODE_TYPE.STATIC
+                    , multiHandler
                 })
 
                 // add the wildcard parameter
@@ -208,6 +215,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
                     , type: NODE_TYPE.MATCH_ALL
                     , params
                     , handler
+                    , multiHandler
                 })
                 return
             }
@@ -222,6 +230,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
         , type: NODE_TYPE.STATIC
         , params
         , handler
+        , multiHandler
     })
 }
 
@@ -263,8 +272,9 @@ const find = (trees, maxParamLength, method, pathIn) => {
                 }
 
                 return {
-                    handler: handle.handler
-                    , params: paramsObj
+                    params: paramsObj
+                    , handler: handle.handler
+                    , multiHandler: currentNode.multiHandler
                 }
             }
         }
@@ -368,11 +378,11 @@ const find = (trees, maxParamLength, method, pathIn) => {
 
 export const create = (trees) => (method, path, ...handlers) => {
     if (handlers.length > 1) {
-        prepareNodes(trees, method, path, handlers)
+        prepareNodes(trees, method, path, handlers, true)
         return
     }
 
-    prepareNodes(trees, method, path, handlers[0])
+    prepareNodes(trees, method, path, handlers[0], false)
 }
 
 export const lookup = (trees, maxParamLength) => (method, path) => {

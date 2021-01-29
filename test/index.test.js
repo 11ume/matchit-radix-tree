@@ -19,6 +19,7 @@ test('route match base multi handler', (t) => {
 
     t.is(handler, found.handler[0])
     t.is(handlerTwo, found.handler[1])
+    t.is(true, found.multiHandler)
 })
 
 test('route match without slash', (t) => {
