@@ -35,15 +35,13 @@ const getWildcardNode = (node, path, len) => {
     return null
 }
 
-// search for parametric or wildcard routes
 const insertNode = ({
     trees
-    , method
     , type
     , path
     , params
+    , method
     , handler
-    , multiHandler
 }) => {
     let pathIn = path
     let len = 0
@@ -117,6 +115,7 @@ const insertNode = ({
                 currentNode = node
                 continue
             }
+
             // there are not children within the given label, let's create a new one!
             node = new Node({
                 type
@@ -133,12 +132,13 @@ const insertNode = ({
     }
 }
 
+// destructure path and make an node trees classification
 const prepareNodes = (trees, method, inPath, handler) => {
     let path = inPath
     const params = []
 
     for (let i = 0, jump, len = path.length; i < len; i++) {
-        // parametric route
+        // parametric node
         if (path[i] === ':') {
             const nodeType = NODE_TYPE.PARAM
             jump = i + 1
@@ -152,7 +152,7 @@ const prepareNodes = (trees, method, inPath, handler) => {
                 , type: NODE_TYPE.STATIC
             })
 
-            // isolate the parameter name :foo
+            // isolate the parameter name
             while (i < len && path[i] !== '/') {
                 i++
             }
@@ -367,9 +367,7 @@ const find = (trees, maxParamLength, method, pathIn) => {
     }
 }
 
-const create = (trees) => (method, path, ...handlers) => {
-    prepareNodes(trees, method, path, handlers)
-}
+const create = (trees) => (method, path, ...handlers) => prepareNodes(trees, method, path, handlers)
 
 const lookup = (trees, maxParamLength) => (method, path) => {
     const cleanedPath = sanitizeUrl(path)

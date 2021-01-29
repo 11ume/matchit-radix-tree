@@ -22,7 +22,14 @@
         "object-property-newline": "error",
         "object-curly-spacing": 1,
         "space-before-function-paren": 0,
-        "no-unused-vars": 0,
+        "no-unused-vars": [
+            "error",
+            {
+                "vars": "all",
+                "args": "all",
+                "ignoreRestSiblings": false
+            }
+        ],
         "object-curly-newline": [
             "error",
             {
