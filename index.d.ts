@@ -13,7 +13,7 @@ export type Matcher = {
 };
 
 export type Found = {
-    handler: Handler[] | null
+    handler: Handler | null
     , handlers: Handler[] | null
     , params: Params
 };
