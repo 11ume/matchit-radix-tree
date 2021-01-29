@@ -3,7 +3,6 @@ export const NODE_TYPE = {
     , PARAM: 1
     , MATCH_ALL: 2
 }
-
 class Node {
     constructor({
         prefix = '/'

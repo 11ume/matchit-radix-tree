@@ -1,7 +1,8 @@
 {
-  "name": "radix-tree-router",
+  "name": "matchit-radix-tree",
   "version": "1.0.0",
   "main": "index.js",
+  "types": "index.d.ts",
   "license": "MIT",
   "type": "module",
   "scripts": {

@@ -1,12 +1,18 @@
-export function sanitizeUrl(url) {
-    for (let i = 0, len = url.length; i < len; i++) {
-        const charCode = url.charCodeAt(i)
+/*
+    Remove in end of the path
+    '#': 35
+    ';': 59
+    '?': 63
+*/
+export function sanitizeUrl(path) {
+    for (let i = 0, len = path.length; i < len; i++) {
+        const charCode = path.charCodeAt(i)
         if (charCode === 63 || charCode === 59 || charCode === 35) {
-            return url.slice(0, i)
+            return path.slice(0, i)
         }
     }
 
-    return url
+    return path
 }
 
 export function groupParams(handler, params) {
